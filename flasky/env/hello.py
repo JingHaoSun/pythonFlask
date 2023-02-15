@@ -9,8 +9,11 @@ from flask_moment import Moment
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from wtforms.validators import DataRequired
 from gevent import pywsgi
+from flask_mail import Mail
+
 
 
 
@@ -25,6 +28,18 @@ app.config['SQLALCHEMY_DATABASE_URI'] =\
  'sqlite:///' + os.path.join(basedir, 'data.sqlite')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+
+#数据库迁移
+migrate = Migrate(app, db)
+
+#配置Gmail
+app.config['MAIL_SERVER'] = 'smtp.googlemail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+
+mail = Mail(app)
 
 # server = pywsgi.WSGIServer(('0.0.0.0', 12345), app)
 # server.serve_forever()
@@ -80,6 +95,9 @@ def index():
                            known=session.get('known', False),current_time=datetime.utcnow())
 
 
+@app.shell_context_processor
+def make_shell_context():
+    return dict(db=db, User=User, Role=Role)
 
 @app.route("/user/<name>")
 def user(name):
